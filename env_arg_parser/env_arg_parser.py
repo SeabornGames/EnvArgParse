@@ -18,7 +18,7 @@ class EnvArgParser(ArgumentParser):
     def parse_args(self, args, namespace=None, prefix='',
                    env=os.environ):
         for action in self._actions:
-            if any([s in args for s in action.option_strings]):
+            if env is None or any([s in args for s in action.option_strings]):
                 continue
             env_var = getattr(action, '_env_var')
             if not env_var or not env.get(f'{prefix}{env_var}'):
@@ -30,6 +30,9 @@ class EnvArgParser(ArgumentParser):
             elif isinstance(action, _StoreAction):
                 args += [action.option_strings[0], value]
             elif isinstance(action, _CountAction):
+                for arg in args:
+                    if any([arg.startswith(s) for s in action.option_strings]):
+                        value = 0
                 args += [action.option_strings[0]] * int(value)
             elif isinstance(action, _StoreConstAction):
                 args += [action.option_strings[0]]
