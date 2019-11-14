@@ -4,9 +4,6 @@ from argparse import (ArgumentParser, _StoreAction, _CountAction,
 
 
 class EnvArgParser(ArgumentParser):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     def add_argument(self, *args, env_var=None, **kwargs):
         action = super().add_argument(*args, **kwargs)
         names = [s for s in action.option_strings if s.startswith('--')]
