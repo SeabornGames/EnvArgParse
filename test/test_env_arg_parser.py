@@ -1,50 +1,63 @@
 import unittest
 from unittest.mock import patch
 
-from argparse import Namespace, ArgumentError
+from argparse import Namespace
 
-from env_arg_parser import EnvArgParser
+from env_argparse import EnvArgumentParse
+
+
+class ParserError(Exception):
+    pass
+
+
+class _EnvArgumentParse(EnvArgumentParse):
+    def error(self, msg):
+        self._test_err_msg = msg
+        raise ParserError(msg)
+
+    def exit(self):
+        return
 
 
 class TestEnvArgParser(unittest.TestCase):
     def test_adds_env_automatically(self):
-        parser = EnvArgParser()
+        parser = _EnvArgumentParse()
         parser.add_argument('--test-arg')
         args = parser.parse_args(args=[], env={'TEST_ARG': '!!!'})
         self.assertEqual(args, Namespace(test_arg='!!!'))
 
     def test_auto_env_vars_can_be_disabled(self):
-        parser = EnvArgParser()
+        parser = _EnvArgumentParse()
         parser.add_argument('--test-arg')
         args = parser.parse_args(args=[], env=None)
         self.assertEqual(args, Namespace(test_arg=None))
 
     def test_can_override_default_env_var(self):
-        parser = EnvArgParser()
+        parser = _EnvArgumentParse()
         parser.add_argument('--test-arg', env_var='ARG_TEST', default=3)
         args = parser.parse_args(args=[], env={'ARG_TEST': '!!!'})
         self.assertEqual(args, Namespace(test_arg='!!!'))
 
     def test_adds_prefixed_env_automatically(self):
-        parser = EnvArgParser()
+        parser = _EnvArgumentParse()
         parser.add_argument('--test-arg')
         args = parser.parse_args(args=[], env={'XXX_TEST_ARG': '!!!'},
                                  prefix='XXX_')
         self.assertEqual(args, Namespace(test_arg='!!!'))
 
     def test_setting_env_var_works_with_required_attribute(self):
-        parser = EnvArgParser()
+        parser = _EnvArgumentParse()
         parser.add_argument('--test-arg', env_var='TEST_ARG', required=True)
         args = parser.parse_args(args=[], env={'TEST_ARG': '!!!'})
         self.assertEqual(args, Namespace(test_arg='!!!'))
 
     def test_returns_error_if_env_var_is_missing_and_has_no_default(self):
-        parser = EnvArgParser()
+        parser = _EnvArgumentParse()
         parser.add_argument('--test-arg', required=True)
         parser.add_argument('--test-other-arg')
         parser.add_argument('--test-another-arg', default=5)
 
-        with self.assertRaises(ArgumentError):
+        with self.assertRaises(Exception):
             parser.parse_args(args=[], env={})
 
         self.assertEqual(parser._test_err_msg,
@@ -53,20 +66,20 @@ class TestEnvArgParser(unittest.TestCase):
                          ' --test-other-arg/env:TEST_OTHER_ARG')
 
     def test_parses_from_os_environ_by_default(self):
-        parser = EnvArgParser()
+        parser = _EnvArgumentParse()
         parser.add_argument('--test-arg', env_var='TEST_ARG')
         with patch.dict('os.environ', {'TEST_ARG': '!!!'}):
             args = parser.parse_args(args=[])
         self.assertEqual(args, Namespace(test_arg='!!!'))
 
     def test_argument_with_type(self):
-        parser = EnvArgParser()
+        parser = _EnvArgumentParse()
         parser.add_argument('--test-arg', type=int)
 
         args = parser.parse_args(args=['--test-arg', '1'])
         self.assertEqual(args, Namespace(test_arg=1))
 
-        with self.assertRaises(ArgumentError) as ctx:
+        with self.assertRaises(ParserError) as ctx:
             parser.parse_args(args=['--test-arg', 'NOTANUMBER'], env={})
         self.assertEqual(str(ctx.exception),
                          "argument --test-arg: invalid int value:"
@@ -75,20 +88,20 @@ class TestEnvArgParser(unittest.TestCase):
         args = parser.parse_args(args=[], env={'TEST_ARG': '1'})
         self.assertEqual(args, Namespace(test_arg=1))
 
-        with self.assertRaises(ArgumentError) as ctx:
+        with self.assertRaises(ParserError) as ctx:
             parser.parse_args(args=[], env={'TEST_ARG': 'NOTANUMBER'})
         self.assertEqual(str(ctx.exception),
                          "argument --test-arg: invalid int value:"
                          " 'NOTANUMBER'")
 
     def test_argument_with_type_and_choices(self):
-        parser = EnvArgParser()
+        parser = _EnvArgumentParse()
         parser.add_argument('--test-arg', type=int, choices=(1, 2, 3))
 
         args = parser.parse_args(args=['--test-arg', '1'], env={})
         self.assertEqual(args, Namespace(test_arg=1))
 
-        with self.assertRaises(ArgumentError) as ctx:
+        with self.assertRaises(ParserError) as ctx:
             parser.parse_args(args=['--test-arg', '42'], env={})
         self.assertEqual(str(ctx.exception),
                          'argument --test-arg: invalid choice: 42 '
@@ -97,30 +110,30 @@ class TestEnvArgParser(unittest.TestCase):
         args = parser.parse_args(args=[], env={'TEST_ARG': '1'})
         self.assertEqual(args, Namespace(test_arg=1))
 
-        with self.assertRaises(ArgumentError) as ctx:
+        with self.assertRaises(ParserError) as ctx:
             parser.parse_args(args=[], env={'TEST_ARG': '42'})
         self.assertEqual(str(ctx.exception),
                          'argument --test-arg: invalid choice: 42 '
                          '(choose from 1, 2, 3)')
 
     def test_argument_with_choices(self):
-        parser = EnvArgParser()
+        parser = _EnvArgumentParse()
         parser.add_argument('--test-arg', choices=('foo', 'bar'))
 
         args = parser.parse_args(args=['--test-arg', 'foo'], env={})
         self.assertEqual(args, Namespace(test_arg='foo'))
 
-        with self.assertRaises(ArgumentError):
+        with self.assertRaises(ParserError):
             parser.parse_args(args=['--test-arg', '!foo'], env={})
 
         args = parser.parse_args(args=[], env={'TEST_ARG': 'foo'})
         self.assertEqual(args, Namespace(test_arg='foo'))
 
-        with self.assertRaises(ArgumentError):
+        with self.assertRaises(ParserError):
             parser.parse_args(args=[], env={'TEST_ARG': '!foo'})
 
     def test_action_store(self):
-        parser = EnvArgParser()
+        parser = _EnvArgumentParse()
         parser.add_argument('--foo',
                             action='store',
                             env_var='XFOO',
@@ -139,7 +152,7 @@ class TestEnvArgParser(unittest.TestCase):
         self.assertEqual(args, Namespace(foo='!!!'))
 
     def test_action_const(self):
-        parser = EnvArgParser()
+        parser = _EnvArgumentParse()
         parser.add_argument('--foo',
                             env_var='XFOO',
                             action='store_const',
@@ -159,7 +172,7 @@ class TestEnvArgParser(unittest.TestCase):
         self.assertEqual(args, Namespace(foo='!!!'))
 
     def test_action_store_true(self):
-        parser = EnvArgParser()
+        parser = _EnvArgumentParse()
         parser.add_argument('--foo',
                             env_var='XFOO',
                             action='store_true')
@@ -177,7 +190,7 @@ class TestEnvArgParser(unittest.TestCase):
         self.assertEqual(args, Namespace(foo=True))
 
     def test_action_store_false(self):
-        parser = EnvArgParser()
+        parser = _EnvArgumentParse()
         parser.add_argument('--foo',
                             env_var='XFOO',
                             default=True,
@@ -196,7 +209,7 @@ class TestEnvArgParser(unittest.TestCase):
         self.assertEqual(args, Namespace(foo=False))
 
     def test_action_count(self):
-        parser = EnvArgParser()
+        parser = _EnvArgumentParse()
         parser.add_argument('-v', '--verbosity',
                             env_var='VERBOSITY',
                             action='count',
@@ -216,7 +229,7 @@ class TestEnvArgParser(unittest.TestCase):
 
     @unittest.skip('NotImplemented')
     def test_action_append(self):
-        parser = EnvArgParser()
+        parser = _EnvArgumentParse()
         parser.add_argument('-t', '--things',
                             action='append',
                             env_var='THINGS',

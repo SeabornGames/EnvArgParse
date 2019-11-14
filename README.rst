@@ -1,5 +1,5 @@
-EnvArgParser
-============
+EnvArgParse
+===========
 
 This subclasses python's argparse to automatically add the environmental
 variables to the list of the args.

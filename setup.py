@@ -8,19 +8,19 @@ except Exception:
     long_description = ''
 
 setup(
-    name='env_arg_parser',
+    name='env_argparse',
     version='6.0.1',
     description="This subclasses python's argparse to automatically accept"
                 " environmental variables under the same name.",
     long_description=long_description,
     author='Ben Christenson',
     author_email='Python@BenChristenson.com',
-    url='https://github.com/SeabornGames/EnvArgParser',
+    url='https://github.com/SeabornGames/EnvArgParse',
     install_requires=[
     ],
     extras_require={
     },
-    packages=['env_arg_parser'],
+    packages=['env_argparse'],
     license='MIT License',
     classifiers=(
         'Intended Audience :: Developers',
