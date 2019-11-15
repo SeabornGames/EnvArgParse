@@ -1,6 +1,5 @@
 import os
-from argparse import (ArgumentParser, _StoreAction, _CountAction,
-                      _StoreConstAction)
+from argparse import ArgumentParser
 
 
 class EnvArgParse(ArgumentParser):
@@ -14,6 +13,9 @@ class EnvArgParse(ArgumentParser):
 
     def parse_args(self, args, namespace=None, prefix='',
                    env=os.environ):
+        _StoreAction = self._registry_get('action', 'store', None)
+        _CountAction = self._registry_get('action', 'count', None)
+        _StoreConstAction = self._registry_get('action', 'store_const', None)
         for action in self._actions:
             if env is None or any([s in args for s in action.option_strings]):
                 continue
