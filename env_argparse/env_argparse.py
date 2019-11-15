@@ -3,7 +3,7 @@ from argparse import (ArgumentParser, _StoreAction, _CountAction,
                       _StoreConstAction)
 
 
-class EnvArgParser(ArgumentParser):
+class EnvArgParse(ArgumentParser):
     def add_argument(self, *args, env_var=None, **kwargs):
         action = super().add_argument(*args, **kwargs)
         names = [s for s in action.option_strings if s.startswith('--')]

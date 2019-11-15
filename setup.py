@@ -9,9 +9,9 @@ except Exception:
 
 setup(
     name='env_argparse',
-    version='6.0.1',
-    description="This subclasses python's argparse to automatically accept"
-                " environmental variables under the same name.",
+    version='0.0.1',
+    description="This subclasses python's argparse to automatically add"
+                " environmental variables to the args under the same name.",
     long_description=long_description,
     author='Ben Christenson',
     author_email='Python@BenChristenson.com',
